@@ -37,7 +37,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python main.py
 
-           - name: Commit updated state
+      - name: Commit updated state
         run: |
           git config --global user.name "forex-bot"
           git config --global user.email "forex-bot@users.noreply.github.com"
