@@ -36,6 +36,7 @@ FOREX_PAIRS = [
 # --- Data Settings ---
 DATA_INTERVAL = os.getenv("DATA_INTERVAL", "15m")   # yfinance interval
 DATA_PERIOD = os.getenv("DATA_PERIOD", "5d")         # lookback window (yfinance limits intraday history)
+MAX_DATA_AGE_MINUTES = int(os.getenv("MAX_DATA_AGE_MINUTES", "90"))  # skip a pair if its latest candle is older than this (e.g. weekend market close)
 
 # --- Indicator Parameters ---
 RSI_PERIOD = 14
