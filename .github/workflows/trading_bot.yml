@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write   # needed to commit the updated state.json back to the repo
 
+concurrency:
+  group: forex-signal-bot
+  cancel-in-progress: false   # queue runs instead of overlapping them
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
