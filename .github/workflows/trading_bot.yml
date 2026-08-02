@@ -44,5 +44,15 @@ jobs:
           git add state.json
           git diff --staged --quiet && exit 0
           git commit -m "Update signal state [skip ci]"
-          git pull --rebase origin main
-          git push
+
+          for attempt in 1 2 3 4 5; do
+            if git pull --rebase origin main && git push; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "Push attempt $attempt failed, retrying..."
+            sleep $((attempt * 5))
+          done
+
+          echo "All push attempts failed"
+          exit 1
