@@ -60,5 +60,11 @@ ATR_TARGET_MULTIPLIER = 3.0   # take-profit = entry -/+ (ATR * multiplier) -> ~2
 # --- State Persistence ---
 STATE_FILE = os.getenv("STATE_FILE", "state.json")
 
+# --- Supabase (powers the website's public signal history) ---
+# Use the service_role key here (NOT the anon key) -- this runs server-side
+# only, in GitHub Actions, and needs to bypass RLS to insert rows.
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
 # --- Behavior Flags ---
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"  # if true, skip Telegram sends (log only)

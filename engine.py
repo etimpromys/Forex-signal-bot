@@ -12,8 +12,9 @@ import data_fetcher
 import indicators
 import strategy
 import risk_manager
-import claude_reasoning
+import ai_reasoning
 import telegram_notifier
+import supabase_logger
 import state_manager
 import config
 
@@ -56,7 +57,7 @@ def process_pair(pair: str, df, state: dict) -> None:
         atr=snapshot["atr"],
     )
 
-    explanation = claude_reasoning.generate_explanation(
+    explanation = ai_reasoning.generate_explanation(
         pair=pair,
         signal=new_signal,
         snapshot=snapshot,
@@ -69,6 +70,19 @@ def process_pair(pair: str, df, state: dict) -> None:
         signal=new_signal,
         trade_params=trade_params,
         snapshot=snapshot,
+        explanation=explanation,
+    )
+
+    # Log to the website's signal history regardless of Telegram outcome --
+    # the site should reflect what the engine decided even if Telegram is
+    # briefly down. State only advances once Telegram delivery succeeds, same
+    # as before, so a failed Telegram send will still retry next run.
+    supabase_logger.log_signal(
+        pair=pair,
+        signal=new_signal,
+        trade_params=trade_params,
+        snapshot=snapshot,
+        reasons=result["reasons"],
         explanation=explanation,
     )
 
