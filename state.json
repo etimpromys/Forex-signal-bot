@@ -1,3 +1,4 @@
 {
-  "USDCHF=X": "HOLD"
+  "USDCHF=X": "HOLD",
+  "EURUSD=X": "SELL"
 }
