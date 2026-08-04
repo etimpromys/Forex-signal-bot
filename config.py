@@ -67,5 +67,10 @@ STATE_FILE = os.getenv("STATE_FILE", "state.json")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 
+# --- Outcome tracking ---
+# If a pending signal hasn't hit its stop-loss or take-profit within this
+# many hours, mark it 'expired' rather than leaving it pending forever.
+OUTCOME_EXPIRE_HOURS = int(os.getenv("OUTCOME_EXPIRE_HOURS", "72"))
+
 # --- Behavior Flags ---
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"  # if true, skip Telegram sends (log only)

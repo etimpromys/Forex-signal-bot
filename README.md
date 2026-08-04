@@ -26,6 +26,11 @@ same pattern as the daily football prediction bot.
 7. **State** (`state_manager.py`) — remembers the last signal per pair in `state.json`
    so you don't get spammed with the same signal every 15 minutes. The GitHub Actions
    workflow commits this file back to the repo after each run.
+8. **Outcome tracking** (`outcome_tracker.py`) — checks every pending signal against
+   the price data fetched that run to see whether it actually hit its stop-loss or
+   take-profit yet. Updates the signal's `outcome` in Supabase to `win`/`loss`
+   accordingly, so the website reflects real results, not just whether the indicator
+   confluence relaxed back to HOLD (those are two different things — see below).
 
 ## Important limitation (read this)
 
@@ -33,6 +38,26 @@ No indicator combination — RSI, MACD, EMA, ATR, or otherwise — eliminates fa
 signals. This bot reduces noise by requiring multiple conditions to agree, but every
 signal is a probabilistic edge, not a guarantee. Treat it as one input among several,
 size positions conservatively, and never risk more than you can afford to lose.
+
+## "Returned to HOLD" vs. actual outcome — these are different things
+
+When you get a Telegram message saying a pair "returned to HOLD/neutral state," that
+means the indicator confluence that triggered the signal no longer holds — it does
+**not** mean the trade hit its stop or target. The bot has no visibility into whether
+price actually reached those levels when it sends that message; it's purely reporting
+on indicator state.
+
+Actual win/loss is determined separately, by `outcome_tracker.py`, which checks real
+price history against each signal's stop-loss and take-profit levels every run. A
+signal can keep showing `pending` on the website for a while after its "returned to
+HOLD" alert, and that's expected — the two are tracked independently. If a signal
+resolves after `OUTCOME_EXPIRE_HOURS` (default 72) without hitting either level, it's
+marked `expired` rather than left pending forever.
+
+One caveat: if a single candle's price range spans both the stop and target (rare on
+15-minute candles, more likely on quiet pairs with wide levels), OHLC data alone can't
+tell us which was touched first — the tracker conservatively assumes the stop was hit
+first in that case.
 
 ## Local setup
 
@@ -110,6 +135,8 @@ forex_trading_bot/
 ├── risk_manager.py         # stop-loss/take-profit/position sizing
 ├── ai_reasoning.py          # Gemini (free) / Claude (paid) explanation generation
 ├── telegram_notifier.py    # Telegram formatting + sending
+├── supabase_logger.py       # writes fired signals to the website's database
+├── outcome_tracker.py       # resolves pending signals to win/loss/expired
 ├── state_manager.py        # persists last signal per pair
 ├── engine.py                # orchestrates the full pipeline
 ├── main.py                  # entry point

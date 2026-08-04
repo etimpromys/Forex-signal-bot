@@ -15,6 +15,7 @@ import risk_manager
 import ai_reasoning
 import telegram_notifier
 import supabase_logger
+import outcome_tracker
 import state_manager
 import config
 
@@ -102,6 +103,11 @@ def run_once() -> None:
 
     for pair, df in all_data.items():
         process_pair(pair, df, state)
+
+    # Check pending signals against this run's price data to resolve
+    # win/loss/expired -- uses the raw OHLC data already fetched above,
+    # no extra API calls.
+    outcome_tracker.update_pending_outcomes(all_data)
 
     state_manager.save_state(state)
     print("[ENGINE] Scan complete.")
