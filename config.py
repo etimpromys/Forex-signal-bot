@@ -72,5 +72,16 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 # many hours, mark it 'expired' rather than leaving it pending forever.
 OUTCOME_EXPIRE_HOURS = int(os.getenv("OUTCOME_EXPIRE_HOURS", "72"))
 
+# --- Session filter ---
+# Evidence-based, from analyzing ~65 resolved signals by UTC hour: win rate
+# during 00:00-07:59 UTC (late Asian session, before London liquidity)
+# was ~11% across all pairs, vs ~43% during 08:00-15:59 UTC. New signals
+# are suppressed during the dead zone; outcome tracking and "returned to
+# HOLD" updates for already-open signals still run normally regardless of
+# hour, since a live position resolving isn't something to suppress.
+SESSION_FILTER_ENABLED = os.getenv("SESSION_FILTER_ENABLED", "true").lower() == "true"
+DEAD_ZONE_START_UTC = int(os.getenv("DEAD_ZONE_START_UTC", "0"))   # inclusive
+DEAD_ZONE_END_UTC = int(os.getenv("DEAD_ZONE_END_UTC", "8"))       # exclusive -> blocks hours 0-7
+
 # --- Behavior Flags ---
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"  # if true, skip Telegram sends (log only)

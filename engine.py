@@ -18,6 +18,21 @@ import supabase_logger
 import outcome_tracker
 import state_manager
 import config
+from datetime import datetime, timezone
+
+
+def _in_dead_zone() -> bool:
+    """
+    True if the current UTC hour falls in the low-liquidity window where
+    live signal data showed win rates collapsing (see config.py comment for
+    the numbers). Used to suppress firing brand-new signals during that
+    window -- doesn't affect outcome tracking or "returned to HOLD" updates
+    for signals that already fired during good hours.
+    """
+    if not config.SESSION_FILTER_ENABLED:
+        return False
+    hour = datetime.now(timezone.utc).hour
+    return config.DEAD_ZONE_START_UTC <= hour < config.DEAD_ZONE_END_UTC
 
 
 def process_pair(pair: str, df, state: dict) -> None:
@@ -36,6 +51,11 @@ def process_pair(pair: str, df, state: dict) -> None:
     result = strategy.evaluate_signal(snapshot)
     new_signal = result["signal"]
     last_signal = state.get(pair, "HOLD")
+
+    if new_signal != "HOLD" and _in_dead_zone():
+        current_hour = datetime.now(timezone.utc).hour
+        print(f"[{pair}] signal={new_signal} suppressed (dead zone, {current_hour}:00 UTC)")
+        return
 
     print(f"[{pair}] signal={new_signal} last={last_signal} rsi={snapshot['rsi']} macd_hist={snapshot['macd_hist']}")
 
