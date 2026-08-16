@@ -3,5 +3,5 @@
   "EURUSD=X": "BUY",
   "AUDUSD=X": "HOLD",
   "GBPUSD=X": "HOLD",
-  "USDJPY=X": "HOLD"
+  "USDJPY=X": "BUY"
 }
