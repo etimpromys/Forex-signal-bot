@@ -2,6 +2,6 @@
   "USDCHF=X": "HOLD",
   "EURUSD=X": "HOLD",
   "AUDUSD=X": "HOLD",
-  "GBPUSD=X": "BUY",
-  "USDJPY=X": "HOLD"
+  "GBPUSD=X": "HOLD",
+  "USDJPY=X": "SELL"
 }
