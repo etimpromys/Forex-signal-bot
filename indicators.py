@@ -1,14 +1,11 @@
 """
 indicators.py
-Technical indicator calculations: RSI, MACD, EMA, ATR.
-
-Uses the lightweight pure-Python `ta` library (no compiled dependencies like TA-Lib,
-which keeps this GitHub-Actions-friendly with a plain `pip install`).
+Technical indicator calculations: RSI, MACD, EMA, ATR, ADX.
 """
 
 import pandas as pd
 from ta.momentum import RSIIndicator
-from ta.trend import MACD, EMAIndicator
+from ta.trend import MACD, EMAIndicator, ADXIndicator
 from ta.volatility import AverageTrueRange
 
 import config
@@ -17,21 +14,18 @@ import config
 def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     """
     Takes an OHLC DataFrame and appends indicator columns:
-    rsi, ema_fast, ema_slow, macd, macd_signal, macd_hist, atr
+    rsi, ema_fast, ema_slow, macd, macd_signal, macd_hist, atr, adx
 
     Returns a new DataFrame (does not mutate the input in place).
     """
     out = df.copy()
 
-    # RSI
     rsi = RSIIndicator(close=out["close"], window=config.RSI_PERIOD)
     out["rsi"] = rsi.rsi()
 
-    # EMA fast/slow
     out["ema_fast"] = EMAIndicator(close=out["close"], window=config.EMA_FAST).ema_indicator()
     out["ema_slow"] = EMAIndicator(close=out["close"], window=config.EMA_SLOW).ema_indicator()
 
-    # MACD
     macd = MACD(
         close=out["close"],
         window_fast=config.MACD_FAST,
@@ -42,9 +36,13 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     out["macd_signal"] = macd.macd_signal()
     out["macd_hist"] = macd.macd_diff()
 
-    # ATR (needs high/low/close)
     atr = AverageTrueRange(high=out["high"], low=out["low"], close=out["close"], window=config.ATR_PERIOD)
     out["atr"] = atr.average_true_range()
+
+    # ADX -- trend strength, not direction. Used to suppress mean-reversion
+    # signals during strong-trend conditions (see config.py comment).
+    adx = ADXIndicator(high=out["high"], low=out["low"], close=out["close"], window=config.ADX_PERIOD)
+    out["adx"] = adx.adx()
 
     return out.dropna()
 
@@ -67,4 +65,5 @@ def latest_snapshot(df: pd.DataFrame) -> dict:
         "macd_hist": round(float(last["macd_hist"]), 5),
         "macd_hist_prev": round(float(prev["macd_hist"]), 5),
         "atr": round(float(last["atr"]), 5),
+        "adx": round(float(last["adx"]), 2),
     }

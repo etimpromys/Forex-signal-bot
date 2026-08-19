@@ -1,22 +1,8 @@
 """
 strategy.py
-Combines RSI, MACD, and EMA into a confluence-based signal.
-
-Design note (carried over from our earlier discussion): no combination of
-indicators eliminates false signals. This strategy requires 2-of-3 conditions
-to agree before firing, which reduces noise but does NOT guarantee accuracy.
-Treat every signal as a probabilistic edge, not a certainty.
-
-Confluence conditions per direction:
-  BUY requires at least 2 of:
-    - RSI crossing up from oversold territory (rsi < 40, trending up)
-    - MACD histogram flipping positive (bullish momentum shift)
-    - EMA fast > EMA slow (trend filter, fast above slow = uptrend)
-
-  SELL requires at least 2 of:
-    - RSI crossing down from overbought territory (rsi > 60, trending down)
-    - MACD histogram flipping negative (bearish momentum shift)
-    - EMA fast < EMA slow (trend filter, fast below slow = downtrend)
+Combines RSI, MACD, and EMA into a confluence-based signal, with an ADX
+trend-strength filter that suppresses signals during strong-trend
+conditions -- see config.py for why.
 """
 
 from typing import Dict, Any
@@ -37,23 +23,34 @@ def evaluate_signal(snapshot: Dict[str, Any]) -> Dict[str, Any]:
     macd_hist_prev = snapshot["macd_hist_prev"]
     ema_fast = snapshot["ema_fast"]
     ema_slow = snapshot["ema_slow"]
+    adx = snapshot.get("adx")
+
+    # ADX filter: this is a mean-reversion strategy (looks for reversals),
+    # which underperforms badly during strong, one-directional trend days --
+    # exactly what high ADX indicates. Suppress before evaluating confluence
+    # at all, rather than computing a signal and then discarding it, so the
+    # reason is clear in what gets returned.
+    if config.ADX_FILTER_ENABLED and adx is not None and adx >= config.ADX_TREND_THRESHOLD:
+        return {
+            "signal": "HOLD",
+            "confluence_count": 0,
+            "reasons": [],
+            "suppressed": f"ADX {adx} >= {config.ADX_TREND_THRESHOLD} (strong trend, mean-reversion signals unreliable)",
+        }
 
     buy_reasons = []
     sell_reasons = []
 
-    # RSI condition
     if rsi < 40:
         buy_reasons.append(f"RSI at {rsi} is below 40 (oversold zone)")
     if rsi > 60:
         sell_reasons.append(f"RSI at {rsi} is above 60 (overbought zone)")
 
-    # MACD histogram flip
     if macd_hist > 0 and macd_hist_prev <= 0:
         buy_reasons.append("MACD histogram flipped positive (bullish momentum shift)")
     if macd_hist < 0 and macd_hist_prev >= 0:
         sell_reasons.append("MACD histogram flipped negative (bearish momentum shift)")
 
-    # EMA trend filter
     if ema_fast > ema_slow:
         buy_reasons.append(f"EMA{config.EMA_FAST} above EMA{config.EMA_SLOW} (uptrend)")
     if ema_fast < ema_slow:

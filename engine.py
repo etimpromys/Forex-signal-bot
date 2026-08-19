@@ -1,13 +1,3 @@
-"""
-engine.py
-Orchestrates one full pass across all configured forex pairs:
-fetch data -> compute indicators -> evaluate strategy -> if signal changed,
-calculate risk parameters, get Claude's explanation, and alert via Telegram.
-
-Designed to run ONCE per invocation (not an infinite loop), so it fits a
-GitHub Actions cron schedule cleanly -- same pattern as the football bot.
-"""
-
 import data_fetcher
 import indicators
 import strategy
@@ -22,13 +12,6 @@ from datetime import datetime, timezone
 
 
 def _in_dead_zone() -> bool:
-    """
-    True if the current UTC hour falls in the low-liquidity window where
-    live signal data showed win rates collapsing (see config.py comment for
-    the numbers). Used to suppress firing brand-new signals during that
-    window -- doesn't affect outcome tracking or "returned to HOLD" updates
-    for signals that already fired during good hours.
-    """
     if not config.SESSION_FILTER_ENABLED:
         return False
     hour = datetime.now(timezone.utc).hour
@@ -36,7 +19,6 @@ def _in_dead_zone() -> bool:
 
 
 def process_pair(pair: str, df, state: dict) -> None:
-    """Runs the full pipeline for a single pair and updates state in place."""
     try:
         df_with_indicators = indicators.add_indicators(df)
     except Exception as e:
@@ -57,21 +39,21 @@ def process_pair(pair: str, df, state: dict) -> None:
         print(f"[{pair}] signal={new_signal} suppressed (dead zone, {current_hour}:00 UTC)")
         return
 
-    print(f"[{pair}] signal={new_signal} last={last_signal} rsi={snapshot['rsi']} macd_hist={snapshot['macd_hist']}")
+    suppressed_note = f" [{result['suppressed']}]" if result.get("suppressed") else ""
+    print(f"[{pair}] signal={new_signal} last={last_signal} rsi={snapshot['rsi']} "
+          f"macd_hist={snapshot['macd_hist']} adx={snapshot['adx']}{suppressed_note}")
 
     if new_signal == "HOLD":
         if last_signal != "HOLD":
             telegram_notifier.send_telegram_message(
-                f"ℹ️ <b>Position Status:</b> {pair.replace('=X', '')} returned to HOLD/neutral state."
+                f"\u2139\ufe0f <b>Position Status:</b> {pair.replace('=X', '')} returned to HOLD/neutral state."
             )
             state[pair] = "HOLD"
         return
 
     if new_signal == last_signal:
-        # Same signal as last run, don't spam another alert
         return
 
-    # New/changed signal -> build the full alert
     trade_params = risk_manager.calculate_trade_parameters(
         signal=new_signal,
         entry_price=snapshot["close"],
@@ -94,10 +76,6 @@ def process_pair(pair: str, df, state: dict) -> None:
         explanation=explanation,
     )
 
-    # Log to the website's signal history regardless of Telegram outcome --
-    # the site should reflect what the engine decided even if Telegram is
-    # briefly down. State only advances once Telegram delivery succeeds, same
-    # as before, so a failed Telegram send will still retry next run.
     supabase_logger.log_signal(
         pair=pair,
         signal=new_signal,
@@ -112,7 +90,6 @@ def process_pair(pair: str, df, state: dict) -> None:
 
 
 def run_once() -> None:
-    """Single full pass across all pairs. Entry point for scheduled runs."""
     print("[ENGINE] Starting forex signal scan...")
     state = state_manager.load_state()
 
@@ -124,9 +101,6 @@ def run_once() -> None:
     for pair, df in all_data.items():
         process_pair(pair, df, state)
 
-    # Check pending signals against this run's price data to resolve
-    # win/loss/expired -- uses the raw OHLC data already fetched above,
-    # no extra API calls.
     outcome_tracker.update_pending_outcomes(all_data)
 
     state_manager.save_state(state)
