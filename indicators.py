@@ -39,8 +39,6 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
     atr = AverageTrueRange(high=out["high"], low=out["low"], close=out["close"], window=config.ATR_PERIOD)
     out["atr"] = atr.average_true_range()
 
-    # ADX -- trend strength, not direction. Used to suppress mean-reversion
-    # signals during strong-trend conditions (see config.py comment).
     adx = ADXIndicator(high=out["high"], low=out["low"], close=out["close"], window=config.ADX_PERIOD)
     out["adx"] = adx.adx()
 
@@ -48,10 +46,6 @@ def add_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def latest_snapshot(df: pd.DataFrame) -> dict:
-    """
-    Extracts the most recent row of indicator values as a plain dict,
-    for use in strategy logic, risk calcs, and Claude reasoning prompts.
-    """
     last = df.iloc[-1]
     prev = df.iloc[-2] if len(df) > 1 else last
 

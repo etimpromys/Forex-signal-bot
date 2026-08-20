@@ -10,14 +10,6 @@ import config
 
 
 def evaluate_signal(snapshot: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Takes an indicator snapshot (from indicators.latest_snapshot) and returns:
-    {
-        "signal": "BUY" | "SELL" | "HOLD",
-        "confluence_count": int,
-        "reasons": [list of str, which conditions fired]
-    }
-    """
     rsi = snapshot["rsi"]
     macd_hist = snapshot["macd_hist"]
     macd_hist_prev = snapshot["macd_hist_prev"]
@@ -25,11 +17,6 @@ def evaluate_signal(snapshot: Dict[str, Any]) -> Dict[str, Any]:
     ema_slow = snapshot["ema_slow"]
     adx = snapshot.get("adx")
 
-    # ADX filter: this is a mean-reversion strategy (looks for reversals),
-    # which underperforms badly during strong, one-directional trend days --
-    # exactly what high ADX indicates. Suppress before evaluating confluence
-    # at all, rather than computing a signal and then discarding it, so the
-    # reason is clear in what gets returned.
     if config.ADX_FILTER_ENABLED and adx is not None and adx >= config.ADX_TREND_THRESHOLD:
         return {
             "signal": "HOLD",
