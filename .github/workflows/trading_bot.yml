@@ -1,9 +1,7 @@
 name: Forex Signal Bot
 
 on:
-  schedule:
-    # Every 15 minutes. Adjust to match config.DATA_INTERVAL.
-    - cron: "*/15 * * * *"
+ 
   workflow_dispatch: {}   # allows manual trigger from the Actions tab
 
 permissions:
