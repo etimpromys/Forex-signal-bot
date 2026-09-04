@@ -1,7 +1,7 @@
 {
-  "USDCHF=X": "BUY",
-  "EURUSD=X": "HOLD",
-  "AUDUSD=X": "HOLD",
-  "GBPUSD=X": "HOLD",
+  "USDCHF=X": "HOLD",
+  "EURUSD=X": "SELL",
+  "AUDUSD=X": "SELL",
+  "GBPUSD=X": "SELL",
   "USDJPY=X": "HOLD"
 }
